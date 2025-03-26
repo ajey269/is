@@ -1,0 +1,194 @@
+Here are the steps for Practical 6 and Practical 7 based on the document:
+
+---
+
+### **Practical 6: Configuring a Zone-Based Policy Firewall (ZPF)**
+
+#### **Step 1: Configure the Network Topology**
+- Add serial interfaces to each router.
+- Configure **PC0, Router0, Router1, Router2, and Server0** as per the network topology.
+
+#### **Step 2: Configure Static Routing**
+- Configure static routes on **Router0, Router1, and Router2** to ensure connectivity.
+- Verify connectivity by pinging the server from PC0.
+
+#### **Step 3: Configure SSH on Router2**
+1. Enable privileged mode:
+   ```
+   Router> enable
+   ```
+2. Enter configuration mode:
+   ```
+   Router# configure terminal
+   ```
+3. Set domain name:
+   ```
+   Router(config)# ip domain-name ismail.com
+   ```
+4. Set hostname:
+   ```
+   Router(config)# hostname R2
+   ```
+5. Generate RSA keys:
+   ```
+   R2(config)# crypto key generate rsa
+   ```
+6. Configure SSH access:
+   ```
+   R2(config)# line vty 0 4
+   R2(config-line)# transport input ssh
+   R2(config-line)# login local
+   ```
+7. Set username and password:
+   ```
+   R2(config)# username ismail privilege 15 password cisco
+   ```
+
+#### **Step 4: Create Firewall Zones on Router1**
+1. Enter configuration mode:
+   ```
+   Router# configure terminal
+   ```
+2. Create security zones:
+   ```
+   Router(config)# zone security in-zone
+   Router(config-sec-zone)# exit
+   Router(config)# zone security out-zone
+   Router(config-sec-zone)# exit
+   ```
+3. Create an access list:
+   ```
+   Router(config)# access-list 101 permit ip 192.168.4.0 0.0.0.255 any
+   ```
+4. Define class and policy maps:
+   ```
+   Router(config)# class-map type inspect match-all in-map
+   Router(config-cmap)# match access-group 101
+   Router(config-cmap)# exit
+   ```
+   ```
+   Router(config)# policy-map type inspect in-out
+   Router(config-pmap)# class type inspect in-map
+   Router(config-pmap-c)# inspect
+   Router(config-pmap-c)# exit
+   Router(config-pmap)# exit
+   ```
+5. Configure zone pairs:
+   ```
+   Router(config)# zone-pair security in-out-zone source in-zone destination out-zone
+   Router(config-sec-zone-pair)# service-policy type inspect in-out
+   ```
+6. Assign interfaces to zones:
+   ```
+   Router(config)# interface GigabitEthernet0/0
+   Router(config-if)# zone-member security in-zone
+   Router(config-if)# exit
+   ```
+   ```
+   Router(config)# interface Serial0/1/1
+   Router(config-if)# zone-member security out-zone
+   Router(config-if)# exit
+   ```
+7. Save the configuration:
+   ```
+   Router# copy running-config startup-config
+   ```
+
+#### **Step 5: Test the Firewall Functionality**
+- **Ping the server from PC** (Success).
+- **Start an SSH session from PC to Router2** (Success).
+- **Check active sessions on Router1:**
+   ```
+   Router# show policy-map type inspect zone-pair sessions
+   ```
+- **Close SSH and access the web server using the browser** (Success).
+- **Ping PC0 from Server** (Fails, verifying the firewall functionality).
+
+---
+
+### **Practical 7: Configure IOS Intrusion Prevention System (IPS) Using CLI**
+
+#### **Step 1: Configure the Network Topology**
+- Add serial interfaces to each router.
+- Configure **PC0, PC1, Router0, Router1, Router2, and Server0**.
+
+#### **Step 2: Configure Routing**
+- Set up **Routing Information Protocol (RIP)** on all routers.
+- Verify connectivity by pinging between nodes.
+
+#### **Step 3: Enable the IOS IPS on Router1**
+1. Check if the security package is enabled:
+   ```
+   Router# show version
+   ```
+2. If security package is not enabled:
+   ```
+   Router(config)# license boot module c1900 technology-package securityk9
+   Router# reload
+   ```
+3. Verify security package activation:
+   ```
+   Router# show version
+   ```
+
+#### **Step 4: Configure IPS on Router1**
+1. Set system time:
+   ```
+   Router# clock set 11:47:56 MARCH 3 2020
+   ```
+2. Create a directory for IPS configuration:
+   ```
+   Router# mkdir smile
+   ```
+3. Define IPS configuration location:
+   ```
+   Router(config)# ip ips config location flash:smile
+   ```
+4. Create an IPS rule:
+   ```
+   Router(config)# ip ips name iosips
+   Router(config)# ip ips notify log
+   ```
+5. Enable IPS signature categories:
+   ```
+   Router(config)# ip ips signature-category
+   Router(config-ips-category)# category all
+   Router(config-ips-category-action)# retired true
+   ```
+   ```
+   Router(config-ips-category)# category ios_ips basic
+   Router(config-ips-category-action)# retired false
+   ```
+6. Apply IPS to an interface:
+   ```
+   Router(config)# interface Serial0/1/0
+   Router(config-if)# ip ips iosips out
+   ```
+
+#### **Step 5: Modify the IPS Signature**
+1. Define a new IPS signature:
+   ```
+   Router(config)# ip ips signature-definition
+   Router(config-sigdef)# signature 2004 0
+   ```
+2. Set signature status:
+   ```
+   Router(config-sigdef-sig)# status
+   Router(config-sigdef-sig-status)# retired false
+   Router(config-sigdef-sig-status)# enabled true
+   ```
+3. Define event actions:
+   ```
+   Router(config-sigdef-sig)# engine
+   Router(config-sigdef-sig-engine)# event-action produce-alert
+   Router(config-sigdef-sig-engine)# event-action deny-packet-inline
+   ```
+
+#### **Step 6: Verify IPS Functionality**
+- **Ping from PC1 to Server** (Fails, verifying IPS).
+- **Ping from Server to PC1** (Fails, verifying IPS).
+- **Check Syslog on Server** to view log activities.
+
+---
+
+These steps complete the configuration for **Practical 6 (ZPF)** and **Practical 7 (IPS)**. Let me know if you need further details! 🚀
